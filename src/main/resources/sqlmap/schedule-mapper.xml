@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="schedule.mapper">
+
+<insert id="insert" parameterType="schedule.vo.ScheduleVO">
+insert into schedule(title, startdate, enddate) 
+	values (#{title}, #{startdate}, #{enddate} )
+</insert>
+
+<select id="getevents" parameterType="schedule.vo.ScheduleVO" resultType="schedule.vo.ScheduleVO">
+	select no, title, startdate, enddate from schedule
+</select>
+
+<update id="update" parameterType="schedule.vo.ScheduleVO">
+	update schedule set title=#{title}, startdate=#{startdate}, enddate=#{enddate} 
+	where no = #{no}
+</update>
+
+<delete id="delete" parameterType="schedule.vo.ScheduleVO">
+delete from schedule where no = #{no}
+</delete>
+
+</mapper>

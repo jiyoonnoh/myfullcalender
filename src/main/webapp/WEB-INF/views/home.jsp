@@ -1,7 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <!DOCTYPE html>
-<html>
 <head>
 <title>일정</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -12,96 +11,177 @@
 <script src="js/fullcalendar.min.js"></script>
 <script src="js/ko.js"></script>
 
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous" />
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<!-- 부트스트랩 -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 
-<link href='css/base.css?1498822894' rel='stylesheet' />
-<script src='js/main.js?1498822894'></script>
-<script src='js/diary.js?1498825633'></script>
+<link rel="stylesheet" type="text/css" href="css/datepicker3.css" />
+<script type="text/javascript" src="js/bootstrap-datepicker.js"></script>
+<script type="text/javascript" src="js/bootstrap-datepicker.kr.js"></script>
+ 
+
 
 <script>
+//풀캘린더 시작
+$(document).ready(function(){
+	
+	/* datePicker */
+	$('.dateRangePicker').datepicker({
+		 format: "yyyy-mm-dd",
+		 language: "kr",
+		 autoclose:true
+	 });
+
+	$('#calendar').fullCalendar({
+		/* 옵션 */
+  		header: {
+		    left: 'prev,next today',
+		    center: 'title',
+		    right: 'month,agendaWeek,agendaDay,listWeek'
+		},
+	   	defaultDate: new Date(),
+     	editable: true, 
+     	selectable: true,
+  		selectHelper: true,
+  		/* 일정 데이터  */
+     	events: function (start, end, timezone, callback) {
+			
+     		$.ajax({
+				url : '/scheduler/GetEvents',
+				type: "POST",
+				async: false,
+				datatype: 'json',
+				success: function(data){
+	       	  		
+					var events = [];
+				
+					$.each(data, function(i, obj) {
+						
+						events.push({
+							title : obj.title, 
+							start : obj.start, 
+							end : obj.end,
+							no : obj.no
+						});					
+					
+					});
+					
+	          		callback(events);
+	          		
+         		 },error : function(req, status) {
+         			alert(status + ': ' + req.status);
+         		 }
+         		 
+			});
+   		},
+     	eventAfterRender: function (start, event, element, view) {
+     		return false;
+     	},
+     	
+     	select: function (info, date) {
+     		
+	   		 $("[name=startdate]").val(date.format(info.startStr));
+       		 $("[name=enddate]").val(date.format(info.endStr));
+			 $("#newModal").modal();
+		},
+     	
+     	/* 날짜 클릭 */
+		dayClick: function(date, jsEvent, view) {
+			
+			console.log(date.format());
+			
+			 $("[name=startdate]").val(date.format());
+			 $("#newModal").modal();
+		},
+		
+		/* 일정 이벤트 클릭 */
+		eventClick: function(info) {
+		  
+			var no = info.no;
+			var title = info.title;
+			var startdate = info.start._i;
+			var enddate = info.end._i;
+			
+			console.log(info);
+			
+			// 자바스크립트 하루더하기 ::: enddate - 1
+			
+			$("[name=no]").val(no);
+			$("[name=title2]").val(title);
+			$("[name=startdate2]").val(startdate);
+			$("[name=enddate2]").val(enddate);
+			
+			//select2
+			$("#updateModal").modal();
+		}
+
+	});
+	
+});
+	// 등록
+	function go_add() {
+		if( $('[name=title]').val() == ''){
+			alert('제목을 입력하세요.');
+			$('[name=title]').focus();
+			return;
+		}else if( $('[name=startdate]').val() == ''){
+			alert('시작날짜를 입력하세요.');
+			$('[name=startdate]').focus();
+			return;
+		}else if( $('[name=enddate]').val() == ''){
+			alert('끝나는 날을 입력하세요.');
+			$('[name=enddate]').focus();
+			return;
+		}
+		
+		$('form').attr("method","POST");
+		$('form').attr("action","/scheduler/add");
+ 		$('form').submit();
+	
+	}//go_add()
+	
+	// 수정
+	function go_update() {
+		if( $('[name=title2]').val() == ''){
+			alert('제목을 입력하세요.');
+			$('[name=title2]').focus();
+			return;
+		}else if( $('[name=startdate2]').val() == ''){
+			alert('시작날짜를 입력하세요.');
+			$('[name=startdate2]').focus();
+			return;
+		}else if( $('[name=enddate2]').val() == ''){
+			alert('끝나는 날을 입력하세요.');
+			$('[name=enddate2]').focus();
+			return;
+		}
+		
+		$('[name=title]').val($('[name=title2]').val());
+		$('[name=startdate]').val($('[name=startdate2]').val());
+		$('[name=enddate]').val($('[name=enddate2]').val());
+		
+ 		$('form').attr("action","/scheduler/update");
+ 		$('form').submit();
+	
+	}
+	
+	// 삭제
+	function go_delete() {
+		
+		if(confirm('정말 삭제하시겠습니까?')){
+			
+ 		$('form').attr("action","/scheduler/delete");
+ 		$('form').submit();
+ 		
+		}else{
+			return false;
+		}
+	}
+
 
 </script>
 
-<script>
-  $(document).ready(function() {
-  
-    $('#calendar').fullCalendar({
-      header: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'month,agendaWeek,agendaDay,listWeek'
-      },
-      defaultDate: new Date() ,
-      navLinks: true, // can click day/week names to navigate views
-      editable: true,
-      eventLimit: true, // allow "more" link when too many events
-      events: [
-        {
-          title: 'All Day Event',
-          start: '2019-01-01',
-        },
-        {
-          title: 'Long Event',
-          start: '2019-01-07',
-          end: '2019-01-10'
-        },
-        {
-          id: 999,
-          title: 'Repeating Event',
-          start: '2019-01-09T16:00:00'
-        },
-        {
-          id: 999,
-          title: 'Repeating Event',
-          start: '2019-01-16T16:00:00'
-        },
-        {
-          title: 'Conference',
-          start: '2019-01-11',
-          end: '2019-01-13'
-        },
-        {
-          title: 'Meeting',
-          start: '2019-01-12T10:30:00',
-          end: '2019-01-12T12:30:00'
-        },
-        {
-          title: 'Lunch',
-          start: '2019-01-12T12:00:00'
-        },
-        {
-          title: 'Meeting',
-          start: '2019-01-12T14:30:00'
-        },
-        {
-          title: 'Happy Hour',
-          start: '2019-01-12T17:30:00'
-        },
-        {
-          title: 'Dinner',
-          start: '2019-01-12T20:00:00'
-        },
-        {
-          title: 'Birthday Party',
-          start: '2019-01-13T07:00:00'
-        },
-        {
-          title: 'Click for Google',
-          url: 'http://google.com/',
-          start: '2019-01-28'
-        }
-      ]
-    });
-
-    
-  });
-
-</script>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous" />
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-
-<link href='css/base.css?1498822894' rel='stylesheet' />
 <style>
 
   body {
@@ -120,21 +200,67 @@
 </head>
 
 <body>
-
-<div style="max-width: 900px; margin: 0 auto; height: 30px;" >
-	<div style="float: right;">
-  		<input type="button" id="addschedule" value="일정등록">
+<form id="form" name="form" method="post">
+ 	<input type="hidden" id="no" name="no"/> 
+	<!-- 일정 추가 버튼 -->
+	<div style="max-width: 900px; margin: 0 auto; height: 60px;" >
+		<div style="float: right;">
+	  		<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#newModal">
+	 			 일정 추가
+			</button>
+		</div>
 	</div>
-</div>
 
-<!-- 캘린더  -->
-  <div id='calendar'>
-  </div>
- </body>
-</html>  
-
-
+	<!-- 캘린더  -->
+  	<div id='calendar'></div>
+  	
+	  <!-- 일정 추가 모달 -->
+		<div class="modal fade" id="newModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		  <div class="modal-dialog">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+		        <h5 class="modal-title" id="myModalLabel" style="font-weight: bold;">일정 추가</h5>
+		      </div>
+		      <div class="modal-body">
+		     	 <h6>일정 제목</h6>
+		        	<input type="text" name="title">
+		        <h6>일정 시작하는 날(yyyy-mm-dd)</h6>
+		        	<input type="text" name="startdate" class="dateRangePicker" autocomplete="off">
+		        <h6>일정 끝나는 날(yyyy-mm-dd)</h6>
+		       	 <input type="text" name="enddate" class="dateRangePicker" autocomplete="off" >
+		        </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+		        <button type="button" class="btn btn-primary" onclick="go_add()">추가하기</button>
+		      </div>
+		    </div>
+		  </div>
+		  
+		 
+		</div>
+		
+	<!-- 수정/삭제 모달  -->
+		<div class="modal fade" id="updateModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		  <div class="modal-dialog">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+		        <h5 class="modal-title" id="myModalLabel" style="font-weight: bold;">일정 변경</h5>
+		      </div>
+		      <div class="modal-body">
+		     	 <h6>일정 제목</h6><input type="text" name="title2">
+		     	 <h6>일정 시작하는 날(yyyy-mm-dd)</h6><input type="text" name="startdate2" class="dateRangePicker" autocomplete="off">
+		         <h6>일정 끝나는 날(yyyy-mm-dd)</h6><input type="text" name="enddate2" class="dateRangePicker" autocomplete="off">
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+		        <button type="button" class="btn btn-primary" onclick="go_update()">수정하기</button>
+		        <button type="button" class="btn btn-danger" onclick="go_delete()">삭제하기</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+  </form>
+</body>
 <!-- 일정 추가 다이얼로그 -->
-
-
-
